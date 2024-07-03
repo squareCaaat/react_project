@@ -3,57 +3,62 @@ import styles from "./App.module.css";
 import { useState, useEffect } from "react";
 
 function App() {
-  // const [counter, setValue] = useState(0);
-  // const [keyword, setKeyword] = useState("");
-  // const onClick = () => setValue((prev)=>prev+1);
-  // const onChange = (event) => setKeyword(event.target.value);
-  
-  // useEffect(() => {console.log("only once");}, []);
-  // useEffect(()=>{
-  //   if(keyword !== "" && keyword.length > 5){
-  //     console.log(keyword, "Searched");
-  //   }
-  // }, [keyword]);
-  // useEffect(() => {console.log("counter changed");}, [counter]);
-  // return (
-  //   <div>
-  //     <input value={keyword} onChange={onChange} type="text" placeholder="Search" />
-  //     {/* <h1 className={styles.title}>Hello React!</h1> */}
-  //     <p>{counter}</p>
-  //     {/* <Button text={"Continue"} /> */}
-  //     <button onClick={onClick}>Click me</button>
-  //   </div>
-  // );
-  // const [showing, setShowing] = useState(false);
-  // const onClick = ()=> setShowing(prev=>!prev);
-  // return (
-  //   <div>
-  //     {showing? <Hello /> : null}
-  //     <button onClick={onClick}>{showing? "Hide":"Show"}</button>
-  //   </div>
-  // );
-  const [toDo, setToDo] = useState("");
-  const [toDos, setToDos] = useState([]);
-  const onChange = (event) => setToDo(event.target.value); 
-  const onSubmit = (event) => {
-    event.preventDefault();
-    if(toDo === ""){
-      return;
+  const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState([]);
+  const [amount, setAmount] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [gcoin, setGcoin] = useState(0);
+  const onChange = (event) => {
+    setAmount(event.target.value);
+    setGcoin(0);
+    if(amount > 0){
+      console.log("amount is greater than 0");
+      coins.some((coin)=>{
+        if(selected === coin.symbol){
+          setGcoin(amount/Math.round(coin.quotes.USD.price));
+          console.log(gcoin);
+          return true;
+        }
+      });
     }
-    setToDos(currentArray => [toDo, ...currentArray]);
-    setToDo("");
-  }
+  };
+  const onSelect = (event) => {
+    setSelected(event.target.value);
+  };
+  useEffect(()=>{
+    fetch("https://api.coinpaprika.com/v1/tickers")
+    .then(response=>response.json())
+    .then(data=>{
+      setCoins(data);
+      setLoading(false);
+    });
+  },[]);
   return (
     <div>
-      <h1>My ToDo List ({toDos.length})</h1>
-      <form onSubmit={onSubmit}>
-        <input value={toDo} onChange={onChange} type="text" placeholder="Write your ToDo" />
-        <button>Add ToDo</button>
-      </form>
-      <hr />
-      <ul>
-        {toDos.map((item, idx)=> <li key={idx}>{item}</li>)}
-      </ul>
+      <h1>The Coins {loading? "" : `(${coins.length})`}</h1>
+      {loading? <strong>Loading...</strong>:
+        <div>
+          <input value={amount} onChange={onChange} type="number" placeholder="Input your budget" /> $ <br/>
+          <select value={selected} onChange={onSelect}>
+            {coins.map((coin)=>{
+              return (
+                <option key={coin.id} value={coin.symbol}>
+                  {coin.name} ({coin.symbol})
+                </option>
+              );
+            })}
+          </select>
+          <h3>
+            You Can Get {gcoin} of 
+              {coins.some((coin)=>{
+                if(coin.symbol === selected){
+                  console.log(selected, "updated!");
+                  return (<span>{coin.name} ({coin.symbol})</span>);
+                }
+              })}
+          </h3>
+        </div>
+      }
     </div>
   );
 }
